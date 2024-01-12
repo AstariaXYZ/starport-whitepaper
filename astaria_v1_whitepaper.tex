@@ -1,0 +1,145 @@
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{multicol}
+\usepackage{blindtext}
+\usepackage{graphicx}
+\usepackage[dvipsnames]{xcolor}
+\graphicspath{ {./images/} }
+%\pagecolor{Periwinkle}
+
+\title{Astaria v1 Lending \& Intents}
+\author{Andrew Redden \\ \texttt{andrew@astaria.xyz}
+        \and
+        Joseph Delong \\ \texttt{joe@astaria.xyz}
+        \and
+        Gregory Curtis \\ \texttt{greg@astaria.xyz}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Astaria v1 is a lending protocol built on the Starport\cite{starport} lending kernel. Astaria v1 is an over collateralized oracleless intents based fixed rate open term lending protocol.\\
+
+Astaria v1 supports an arbitrary basket of ERC-721\cite{erc721}, ERC-1155\cite{erc1155}, ERC-20\cite{erc20} (min 1e6 max 1e18) as collateral assets, and an individual ERC-20 borrow asset.
+\end{abstract}
+
+\section{Introduction}
+Astaria v1 was designed to allow borrowers to optimize their rate and loan-to-value (LTV) with reduced interactivity. Additionally the design reduces liveness requirements for lenders. 
+\section{Intents}
+Every origination in Astaria v1 is an intent. The intent is a timed linear inclining rate auction with amount bounds. Borrowers sign an EIP-712\cite{eip712} message off chain. The message is then used by the lender to fill the conditions of the auction.
+
+The borrower signed message contains these key parameters, start time $\ t_0$, end time $\ t_{end}$, start rate $\ r_0$, end rate $\ r_{end}$, minimum amount $\ a_{min}$, and maximum amount $\ a_{max}$.
+
+To calculate the current satisfying rate$\ r_c$ use the following equation:
+
+$$
+r_c=\frac{\Delta t(r_{end}-r_{0}) }{t_{end} - t_{0}} \\
+$$
+
+
+The end rate will satisfy the auction until the EIP-712 signature expires.\\
+
+Calculate the satisfying amount$\ a$ using the following inequality:
+$$
+a_{min} \le a \le a_{max}
+$$
+
+The lender maintains optionality on the amount provided in the auction as a lender in an efficient market will lend to their maximum LTV on a risk-adjusted basis for the collateral at the calculated rate.
+
+This novel approach allows the borrower to optimize on axis of amount and rate simultaneously. 
+
+\section{Fixed Rates}
+Once an intent is filled the loan is a fixed rate compound interest loan. The borrower repays the lender the principal with compound interest.
+
+Interest is calculated using the continuously compounding exponential growth formula.
+
+$$
+A = A_0e^{rt}
+$$
+
+The benefit of this approach is gas efficiency, accuracy of interest calculations, and preventing a compounding penalty for refinancing.
+
+\section{Open Term \& Recall}
+All loans in Astaria v1 are open term, meaning loans have no predefined end date. Loans continue until they are recalled. Recall is the process of replacing a an original lender with a refinancing lender or impairing the loan and seizing the collateral.\\
+
+There are no oracles in Astaria v1, instead recall acts as the mechanism for impairing or refinancing loans.
+
+\section{Recall Intent}
+If a lender wants to exit their position, the lender initiates a recall using an on chain transaction.\\
+
+Recall opens a new intent for an inclining rate auction. The configuration of this auction is parameterized but the general case is the loan goes from 0-1000\% over 24 hours.\\
+
+If no lender refinances (or the borrower has not repaid the loan) the loan in the recall period the loan is presumed defaulted also called a failed recall. The collateral is now retrievable by the lender through an on chain transaction.\\
+
+Borrowers and lenders can recall at anytime through the course of the loan. A key new design for recall intents is executing them permissionlessly by any party.\\
+
+The following parameters control the conditions of a recall:
+\itemize
+\item honeymoon$\ h$ is a duration after origination in which a loan cannot be recalled
+\item recall window$\ w$ is the duration of the recall intent
+\item maximum rate$\ \rho$ is the end rate for a recall
+\item reward ratio$\ \phi$ is the ratio paid to a recaller in liquidation
+\item stake duration$\ \delta$ is the duration of interest a permissionless recaller must stake
+
+\subsection{Conditions}
+A loan can only be recalled one time. A loan cannot be recalled until honeymoon period has been exceeded.
+
+\subsection{Recallers}
+A lender or borrower can recall a loan without providing any stake.
+
+Additionally, any user (other than the lender and borrower) can recall a loan permissionlessly by providing a stake.
+
+\subsection{Recall Auction}
+
+Once a loan is recalled, it begins a recall auction where the recaller and the recall start are stored. A recall auction is a linear inclining rate auction going from$\ \approx0$ to the maximum rate over the duration of the recall window.\\
+
+During this period any user can refinance the recalled loan for a rate that is equal or below the current rate of the recall auction.\\
+
+Which can be calculated using the following equation:
+
+$$
+ r_c = \frac{\rho \Delta t}{w}
+$$
+
+If the recall auction fails to achieve a refinance by the end of the recall window the recall auction is deemed defaulted and the lender can take possession of the collateral.\\
+
+If the loan is refinanced the lender is repaid by the refinancing lender. The collateral is reassigned to the refinanced loan.
+
+\begin{thebibliography}{9}
+\bibitem{erc20}
+Fabian Vogelsteller, Vitalik Buterin. 
+\textit{ERC-20: Token Standard}. 
+Ethereum Improvement Proposals, 2015.\\
+https://eips.ethereum.org/EIPS/eip-20
+
+\bibitem{erc721}
+ William Entriken, Dieter Shirley, Jacob Evans, Nastassia Sachs. 
+\textit{ERC-721: Non-Fungible Token Standard}. 
+Ethereum Improvement Proposals, 2018.\\
+https://eips.ethereum.org/EIPS/eip-721
+
+\bibitem{erc1155}
+Witek Radomski, Andrew Cooke, Philippe Castonguay, James Therien, Eric Binet, Ronan Sandford. 
+\textit{ERC-1155: Multi Token Standard}. 
+Ethereum Improvement Proposals, 2018.\\
+https://eips.ethereum.org/EIPS/eip-1155
+
+\bibitem{eip712}
+Remco Bloemen, Leonid Logvinov, Jacob Evans.
+\textit{EIP-712: Typed structured data hashing and signing} 
+Ethereum Improvement Proposals, 2017.\\
+https://eips.ethereum.org/EIPS/eip-712
+
+\bibitem{starport}
+Andrew Redden, Joseph Delong, Gregory Curtis.
+\textit{Starport: Lending Kernel} 
+Astaria Github, 2024.\\
+https://github.com/AstariaXYZ/starport-whitepaper/blob/master/starport-whitepaper.pdf
+
+% Add more references as needed
+\end{thebibliography}
+\end{document}
+
