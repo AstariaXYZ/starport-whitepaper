@@ -74,23 +74,19 @@ Recall opens a new intent for an inclining rate auction. The configuration of th
 
 If no lender refinances (or the borrower has not repaid the loan) the loan in the recall period the loan is presumed defaulted also called a failed recall. The collateral is now retrievable by the lender through an on chain transaction.\\
 
-Borrowers and lenders can recall at anytime through the course of the loan. A key new design for recall intents is executing them permissionlessly by any party.\\
+Borrowers and lenders can recall at anytime through the course of the loan.\\
 
 The following parameters control the conditions of a recall:
 \itemize
 \item honeymoon$\ h$ is a duration after origination in which a loan cannot be recalled
 \item recall window$\ w$ is the duration of the recall intent
 \item maximum rate$\ \rho$ is the end rate for a recall
-\item reward ratio$\ \phi$ is the ratio paid to a recaller in liquidation
-\item stake duration$\ \delta$ is the duration of interest a permissionless recaller must stake
 
 \subsection{Conditions}
 A loan can only be recalled one time. A loan cannot be recalled until honeymoon period has been exceeded.
 
 \subsection{Recallers}
-A lender or borrower can recall a loan without providing any stake.
-
-Additionally, any user (other than the lender and borrower) can recall a loan permissionlessly by providing a stake.
+A lender or borrower can recall at anytime except after a recall has been initiated.
 
 \subsection{Recall Auction}
 
